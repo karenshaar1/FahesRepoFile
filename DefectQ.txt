@@ -1,0 +1,37 @@
+Select
+	a.code, a.defect_en, a.default_eval, a.Type, b.Type
+From
+(
+	Select
+		a.code, a.defect_en, a.default_eval
+		, Case a.default_eval when 0 then 'OK/Comment' when 1 then 'Minor'
+			when 2 then 'Major' when 99 then 'Major,Minor' end as Type
+	From
+		Fahes_Latest_Defects_Combination a --[dbo].[Defects_ZK_V1] a
+) a
+Left Join
+(
+ 
+ 
+	select Def_Comment_Code,
+	DMC.Defect_Name_En MainDefect,
+	DSC.Description_En SubDefect,
+	dc.Description_En Defct,
+	case cmt.LookUpValueEn when 'Inspector Decides' then 'Major,Minor'
+	else
+	cmt.LookUpValueEn 
+	end
+	Type
+	from
+	dbo.Defect_Comments DC
+	inner join dbo.Defect_Main_Category DMC on dmc.Main_Defect_Id = dc.Main_Defects_Id
+	inner join dbo.Defect_Sub_Category DSC on dsc.Main_Defects_Id = dc.Main_Defects_Id and dsc.Main_Defects_Id =DMC.Main_Defect_Id
+	and DSC.Sub_Defect_Id = dc.Sub_Defect_Id
+	cross apply dbo.Fn_Core_Get_LookUp_TBL(29,comment_type) cmt
+ 
+) b
+On
+	a.code = b.Def_Comment_Code  and a.Type = b.type
+ 
+Where
+	b.Def_Comment_Code is null
