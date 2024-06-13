@@ -1,0 +1,29 @@
+USE [FAHESVIS]
+GO
+
+/****** Object:  UserDefinedFunction [dbo].[ConvertQatarTimeToUnix]    Script Date: 6/13/2024 11:38:25 AM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE FUNCTION [dbo].[ConvertQatarTimeToUnix](@datetime_qatar DATETIME)
+RETURNS BIGINT
+AS
+BEGIN
+    DECLARE @datetime_utc DATETIMEOFFSET;
+    DECLARE @unix_time_utc BIGINT;
+
+    -- Convert the given datetime in Qatar time to UTC using AT TIME ZONE
+    SET @datetime_utc = @datetime_qatar AT TIME ZONE 'Arab Standard Time' AT TIME ZONE 'UTC';
+
+    -- Convert the UTC datetimeoffset value to Unix time
+    SET @unix_time_utc = DATEDIFF(SECOND, '1970-01-01T00:00:00Z', @datetime_utc);
+
+    -- Return the Unix time
+    RETURN @unix_time_utc;
+END;
+GO
+
+
