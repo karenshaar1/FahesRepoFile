@@ -1,0 +1,227 @@
+INSERT INTO [QDRIVE_FAHES_VIS_SYNC].dbo.[d2q_qdrive_inspection] 
+([id], [vin], [license_plate], [license_plate_type_id], [color_id], [car_category_id], [pid], [station_id], [q_number],
+[q_time], [payment_type], [fee], [inspection_type], [inserted_by], [inserted_on], [mileage], [aw1], [aw2], [aw3], [aw4], [aw5], [aw6], [aw7], [aw8], [aw9], [co], 
+[hc], [smoke_density], [pb1r], [pb1l], [pb2r], [pb2l], [pb3r], [pb3l], [pb4r], 
+[pb4l], [pb5r], [pb5l], [pb6r], [pb6l], [pb7r], [pb7l], [pb8r], [pb8l], [pb9r], [pb9l], [test_begin_section1], [test_end_section1], [test_begin_section2], [test_end_section2],
+[test_begin_section3], [test_end_section3], [lane_no], [inspector_id], 
+[final_eval], [inspected_on],is_imported )
+SELECT
+    TRY_CAST (id as bigint) id, VIN_No, Plate_No, Plate_Type, Color_Id, Category_Id, Owner_PID, Station_Id, qid,
+    TRY_CAST(qtime AS VARCHAR), isnull(Payment_Method,1), Total_Amount, 1, RVCreatedBy, TRY_CAST(qtime AS VARCHAR), milage, 
+    TRY_CAST([aw1] AS VARCHAR), TRY_CAST([aw2] AS VARCHAR), TRY_CAST([aw3] AS VARCHAR), TRY_CAST([aw4] AS VARCHAR), TRY_CAST([aw5] AS VARCHAR), 
+    TRY_CAST([aw6] AS VARCHAR), TRY_CAST([aw7] AS VARCHAR), TRY_CAST([aw8] AS VARCHAR), TRY_CAST([aw9] AS VARCHAR), 
+    TRY_CAST([co] AS VARCHAR), TRY_CAST([hs] AS VARCHAR(5)), TRY_CAST([smoke_density] AS VARCHAR), TRY_CAST([pb1r] AS VARCHAR), 
+    TRY_CAST([pb1l] AS VARCHAR), TRY_CAST([pb2r] AS VARCHAR), TRY_CAST([pb2l] AS VARCHAR), TRY_CAST([pb3r] AS VARCHAR), 
+    TRY_CAST([pb3l] AS VARCHAR), TRY_CAST([pb4r] AS VARCHAR), TRY_CAST([pb4l] AS VARCHAR), TRY_CAST([pb5r] AS VARCHAR), 
+    TRY_CAST([pb5l] AS VARCHAR), TRY_CAST([pb6r] AS VARCHAR), TRY_CAST([pb6l] AS VARCHAR), TRY_CAST([pb7r] AS VARCHAR), 
+    TRY_CAST([pb7l] AS VARCHAR), TRY_CAST([pb8r] AS VARCHAR), TRY_CAST([pb8l] AS VARCHAR), TRY_CAST([pb9r] AS VARCHAR), 
+    TRY_CAST([pb9l] AS VARCHAR), TRY_CAST(Step1_StartTime AS VARCHAR), TRY_CAST(Step1_EndTime AS VARCHAR), 
+    TRY_CAST(Step2_StartTime AS VARCHAR), TRY_CAST(Step2_EndTime AS VARCHAR), TRY_CAST(Step3_StartTime AS VARCHAR), 
+    TRY_CAST(Step3_EndTime AS VARCHAR), step1_laneId, ISNULL(Inspector3_Id, ISNULL(Inspector2_Id, Inspector1_Id)) AS inspector_id, 
+    Final_Result, TRY_CAST(ISNULL(Step3_EndTime, ISNULL(Step2_EndTime, Step1_EndTime)) AS VARCHAR) AS inspected_on,0
+FROM Fahes2QDriveVw FVW  where VIN_NO ='JE3AB76U1GU735612' 
+
+
+
+
+
+USE [FAHESVIS]
+GO
+
+/****** Object:  View [dbo].[Fahes2QDriveVw]    Script Date: 6/13/2024 10:53:05 AM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+create view [dbo].[Fahes2QDriveVw] as
+WITH Milage AS (
+    SELECT 
+        IRC.Request_Id,
+        IRC.Inspection_Req_Id,
+        IRC.Code_Values
+    FROM dbo.Inspection_Request_Config IRC
+    WHERE IRC.Code_Operation = 28
+),
+BrakeReads AS (
+    SELECT 
+        brl.Inspection_Req_Id,
+        brl.Request_Id,
+       SUM(CASE WHEN Device_Output_Code IN ('50100', '50101') THEN TRY_CAST(Reading_Value AS FLOAT) ELSE 0 END) AS aw1,
+        SUM(CASE WHEN Device_Output_Code IN ('51100', '51101') THEN TRY_CAST(Reading_Value AS FLOAT) ELSE 0 END) AS aw2,
+        SUM(CASE WHEN Device_Output_Code IN ('52100', '52101') THEN TRY_CAST(Reading_Value AS FLOAT) ELSE 0 END) AS aw3,
+        SUM(CASE WHEN Device_Output_Code IN ('53100', '53101') THEN TRY_CAST(Reading_Value AS FLOAT) ELSE 0 END) AS aw4,
+        SUM(CASE WHEN Device_Output_Code IN ('54100', '54101') THEN TRY_CAST(Reading_Value AS FLOAT) ELSE 0 END) AS aw5,
+        SUM(CASE WHEN Device_Output_Code IN ('55100', '55101') THEN TRY_CAST(Reading_Value AS FLOAT) ELSE 0 END) AS aw6,
+		 SUM(CASE WHEN Device_Output_Code IN ('56100', '56101') THEN TRY_CAST(Reading_Value AS FLOAT) ELSE 0 END) AS aw7,
+        SUM(CASE WHEN Device_Output_Code IN ('57100', '57101') THEN TRY_CAST(Reading_Value AS FLOAT) ELSE 0 END) AS aw8,
+        SUM(CASE WHEN Device_Output_Code IN ('58100', '58101') THEN TRY_CAST(Reading_Value AS FLOAT) ELSE 0 END) AS aw9,
+         MAX(CASE WHEN Device_Output_Code = '50250' THEN TRY_CAST(Reading_Value AS FLOAT) END) AS pb1r,
+        MAX(CASE WHEN Device_Output_Code = '50251' THEN TRY_CAST(Reading_Value AS FLOAT) END) AS pb1l,
+		MAX(CASE WHEN Device_Output_Code = '51250' THEN TRY_CAST(Reading_Value AS FLOAT) END) AS pb2r,
+        MAX(CASE WHEN Device_Output_Code = '51251' THEN TRY_CAST(Reading_Value AS FLOAT) END) AS pb2l,
+        MAX(CASE WHEN Device_Output_Code = '52250' THEN TRY_CAST(Reading_Value AS FLOAT) END) AS pb3r,
+        MAX(CASE WHEN Device_Output_Code = '52251' THEN TRY_CAST(Reading_Value AS FLOAT) END) AS pb3l,
+        MAX(CASE WHEN Device_Output_Code = '53250' THEN TRY_CAST(Reading_Value AS FLOAT) END) AS pb4r,
+        MAX(CASE WHEN Device_Output_Code = '53251' THEN TRY_CAST(Reading_Value AS FLOAT) END) AS pb4l,
+        MAX(CASE WHEN Device_Output_Code = '54250' THEN TRY_CAST(Reading_Value AS FLOAT) END) AS pb5r,
+        MAX(CASE WHEN Device_Output_Code = '54251' THEN TRY_CAST(Reading_Value AS FLOAT) END) AS pb5l,
+        MAX(CASE WHEN Device_Output_Code = '55250' THEN TRY_CAST(Reading_Value AS FLOAT) END) AS pb6r,
+        MAX(CASE WHEN Device_Output_Code = '55251' THEN TRY_CAST(Reading_Value AS FLOAT) END) AS pb6l,
+        MAX(CASE WHEN Device_Output_Code = '56250' THEN TRY_CAST(Reading_Value AS FLOAT) END) AS pb7r,
+        MAX(CASE WHEN Device_Output_Code = '56251' THEN TRY_CAST(Reading_Value AS FLOAT) END) AS pb7l,
+        MAX(CASE WHEN Device_Output_Code = '57250' THEN TRY_CAST(Reading_Value AS FLOAT) END) AS pb8r,
+        MAX(CASE WHEN Device_Output_Code = '57251' THEN TRY_CAST(Reading_Value AS FLOAT) END) AS pb8l,
+        MAX(CASE WHEN Device_Output_Code = '58250' THEN TRY_CAST(Reading_Value AS FLOAT) END) AS pb9r,
+        MAX(CASE WHEN Device_Output_Code = '58251' THEN TRY_CAST(Reading_Value AS FLOAT) END) AS pb9l
+    FROM dbo.Brake_Reads_Log BRL
+    GROUP BY brl.Inspection_Req_Id, brl.Request_Id
+),
+Emissions AS (
+    SELECT
+        IML.Request_Id,
+        IML.Inspection_Req_Id,
+        MAX(CASE WHEN Device_Output_Code = 39000 THEN try_cast(Reading_Value as varchar) END) AS co,
+        MAX(CASE WHEN Device_Output_Code = 38000 THEN try_cast(Reading_Value as varchar) END) AS smoke_density,
+        MAX(CASE WHEN Device_Output_Code = 39001 THEN try_cast(Reading_Value as varchar) END) AS HS
+    FROM dbo.Exhaust_Emiss_Results_Log IML
+    GROUP BY IML.Request_Id, IML.Inspection_Req_Id
+),
+Step1 AS (
+    SELECT 
+        Inspection_Step_Id AS StepId,
+        Lane_Id AS LaneId,
+        dbo.ConvertQatarTimeToUnix(Step_Start) AS StartTime,
+        dbo.ConvertQatarTimeToUnix(Step_End) AS EndTime,
+        Inspection_Req_Id,
+        Request_Id,
+		Inspector_Id,
+
+        ROW_NUMBER() OVER (PARTITION BY Request_Id, Inspection_Req_Id ORDER BY Step_Start) AS StepNumber
+    FROM dbo.Inspection_Steps IST
+)
+
+SELECT
+    FAHES_Receipt_No AS [ID],
+    rv.VIN_No,
+    rv.Plate_No,
+    rv.Plate_Type,
+    rv.Color_Id,
+    rv.Category_Id,
+    rv.Owner_PID,
+    sr.Station_Id,
+    ROW_NUMBER() OVER (ORDER BY FAHES_Receipt_No) AS qid,
+    dbo.ConvertQatarTimeToUnix(RV.Created_Date) AS qtime,
+    r.Payment_Method,
+    ri.Total_Amount,
+    sr.Service_Type,
+    milage.Code_Values AS milage,
+    brakeReads.aw1,
+    brakeReads.aw2,
+    brakeReads.aw3,
+    brakeReads.aw4,
+    brakeReads.aw5,
+    brakeReads.aw6,
+	brakeReads.aw7,
+    brakeReads.aw8,
+    brakeReads.aw9,
+    emissions.co,
+    emissions.smoke_density,
+    emissions.HS,
+	brakeReads.pb1r,
+    brakeReads.pb1l,
+    brakeReads.pb2r,
+    brakeReads.pb2l,
+    brakeReads.pb3r,
+    brakeReads.pb3l,
+    brakeReads.pb4r,
+    brakeReads.pb4l,
+    brakeReads.pb5r,
+    brakeReads.pb5l,
+    brakeReads.pb6r,
+    brakeReads.pb6l,
+    brakeReads.pb7r,
+    brakeReads.pb7l,
+    brakeReads.pb8r,
+    brakeReads.pb8l,
+    brakeReads.pb9r,
+    brakeReads.pb9l,
+    MAX(CASE WHEN step1.StepNumber = 1 THEN step1.StartTime END) AS Step1_StartTime,
+    MAX(CASE WHEN step1.StepNumber = 1 THEN step1.EndTime END) AS Step1_EndTime,
+    MAX(CASE WHEN step1.StepNumber = 1 THEN step1.LaneId END) AS Step1_LaneId,
+	MAX(CASE WHEN step1.StepNumber = 1 THEN step1.Inspector_Id END) AS Inspector1_Id,
+    MAX(CASE WHEN step1.StepNumber = 2 THEN step1.StartTime END) AS Step2_StartTime,
+    MAX(CASE WHEN step1.StepNumber = 2 THEN step1.EndTime END) AS Step2_EndTime,
+    MAX(CASE WHEN step1.StepNumber = 2 THEN step1.LaneId END) AS Step2_LaneId,
+	MAX(CASE WHEN step1.StepNumber = 2 THEN step1.Inspector_Id END) AS Inspector2_Id,
+    MAX(CASE WHEN step1.StepNumber = 3 THEN step1.StartTime END) AS Step3_StartTime,
+    MAX(CASE WHEN step1.StepNumber = 3 THEN step1.EndTime END) AS Step3_EndTime,
+    MAX(CASE WHEN step1.StepNumber = 3 THEN step1.LaneId END) AS Step3_LaneId,
+	MAX(CASE WHEN step1.StepNumber = 3 THEN step1.Inspector_Id END) AS Inspector3_Id,
+		ir.Final_Result,
+	ir.Status,
+	rv.Created_By RVCreatedBy
+FROM dbo.Inspection_Request IR
+INNER JOIN dbo.Register_Vehicle RV ON RV.Request_Id = ir.Request_Id
+INNER JOIN dbo.Service_Request SR ON sr.Request_Id = ir.Request_Id
+LEFT JOIN Invoice_Details ID ON ID.Request_Id = sr.Request_Id
+LEFT JOIN Receipt R ON R.Invoice_Id = ID.Invoice_Id
+LEFT JOIN Request_Invoice RI ON RI.Invoice_Id = ID.Invoice_Id
+LEFT JOIN Milage milage ON milage.Request_Id = ir.Request_Id AND milage.Inspection_Req_Id = ir.Inspection_Req_Id
+LEFT JOIN BrakeReads brakeReads ON brakeReads.Request_Id = ir.Request_Id AND brakeReads.Inspection_Req_Id = ir.Inspection_Req_Id
+LEFT JOIN Emissions emissions ON emissions.Request_Id = ir.Request_Id AND emissions.Inspection_Req_Id = ir.Inspection_Req_Id
+LEFT JOIN Step1 step1 ON step1.Request_Id = ir.Request_Id AND step1.Inspection_Req_Id = ir.Inspection_Req_Id
+GROUP BY
+    FAHES_Receipt_No,
+    rv.VIN_No,
+    rv.Plate_No,
+    rv.Plate_Type,
+    rv.Color_Id,
+    rv.Category_Id,
+    rv.Owner_PID,
+    sr.Station_Id,
+    dbo.ConvertQatarTimeToUnix(RV.Created_Date),
+    r.Payment_Method,
+    ri.Total_Amount,
+    sr.Service_Type,
+    milage.Code_Values,
+    brakeReads.aw1,
+    brakeReads.aw2,
+    brakeReads.aw3,
+    brakeReads.aw4,
+    brakeReads.aw5,
+    brakeReads.aw6,
+	 brakeReads.aw7,
+    brakeReads.aw8,
+    brakeReads.aw9,
+    emissions.co,
+    emissions.smoke_density,
+    emissions.HS,
+	brakeReads.pb1r,
+    brakeReads.pb1l,
+    brakeReads.pb2r,
+    brakeReads.pb2l,
+    brakeReads.pb3r,
+    brakeReads.pb3l,
+    brakeReads.pb4r,
+    brakeReads.pb4l,
+    brakeReads.pb5r,
+    brakeReads.pb5l,
+    brakeReads.pb6r,
+    brakeReads.pb6l,
+    brakeReads.pb7r,
+    brakeReads.pb7l,
+    brakeReads.pb8r,
+    brakeReads.pb8l,
+    brakeReads.pb9r,
+    brakeReads.pb9l,
+		ir.Final_Result,
+	ir.Status,
+	rv.Created_By;
+GO
+
+
+
+
+
